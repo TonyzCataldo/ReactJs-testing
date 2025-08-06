@@ -15,13 +15,13 @@ describe("Counter", () => {
       render(<Counter defaultCount={0} description="description props" />);
       expect(screen.getByText("description props")).toBeInTheDocument();
     });
-    it("should render input with 0", () => {
+    it("should render input with 1", () => {
       render(<Counter defaultCount={0} description="description props" />);
       const input = screen.getByRole("spinbutton", {
         name: "Valor para alterar",
       });
       expect(input).toBeInTheDocument();
-      expect(input).toHaveValue(0);
+      expect(input).toHaveValue(1);
     });
     it("should render + and - buttons", () => {
       render(<Counter defaultCount={0} description="description props" />);
@@ -46,6 +46,48 @@ describe("Counter", () => {
       await user.click(minusButton);
       expect(
         screen.getByRole("heading", { level: 1, name: "Counter = -1" })
+      ).toBeInTheDocument();
+    });
+  });
+  describe("when user change the input value, render and change the value of operations", () => {
+    it("should render input with new value", async () => {
+      render(<Counter defaultCount={0} description="description props" />);
+      const input = screen.getByRole("spinbutton", {
+        name: "Valor para alterar",
+      });
+      await user.clear(input);
+      await user.type(input, "3");
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveValue(3);
+    });
+  });
+  describe("when user change the input value and + is clicked add the input number to counter", () => {
+    it("should render title with counter 5 after + button is clicked", async () => {
+      render(<Counter defaultCount={0} description="description props" />);
+      const input = screen.getByRole("spinbutton", {
+        name: "Valor para alterar",
+      });
+      const addButton = screen.getByRole("button", { name: "+" });
+      await user.clear(input);
+      await user.type(input, "5");
+      await user.click(addButton);
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Counter = 5" })
+      ).toBeInTheDocument();
+    });
+  });
+  describe("when user change the input value and - is clicked retire the input number to counter", () => {
+    it("should render title with counter -5 after - button is clicked", async () => {
+      render(<Counter defaultCount={0} description="description props" />);
+      const input = screen.getByRole("spinbutton", {
+        name: "Valor para alterar",
+      });
+      const minusButton = screen.getByRole("button", { name: "-" });
+      await user.clear(input);
+      await user.type(input, "5");
+      await user.click(minusButton);
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Counter = -5" })
       ).toBeInTheDocument();
     });
   });

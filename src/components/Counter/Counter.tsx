@@ -7,6 +7,7 @@ type CounterPropsType = {
 
 const Counter = ({ defaultCount, description }: CounterPropsType) => {
   const [counter, setCounter] = useState(defaultCount);
+  const [modifier, setModifier] = useState(1);
 
   return (
     <div>
@@ -16,13 +17,19 @@ const Counter = ({ defaultCount, description }: CounterPropsType) => {
       <input
         id="change value"
         type="number"
-        value={counter}
-        onChange={(e) => setCounter(Number(e.target.value))}
+        value={modifier}
+        onChange={(e) => setModifier(Number(e.target.value))}
       ></input>
-      <button value={counter} onClick={() => setCounter((prev) => prev + 1)}>
+      <button
+        value={counter}
+        onClick={() => setCounter((prev) => prev + modifier)}
+      >
         +
       </button>
-      <button value={counter} onClick={() => setCounter((prev) => prev - 1)}>
+      <button
+        value={counter}
+        onClick={() => setCounter((prev) => prev - modifier)}
+      >
         -
       </button>
     </div>
