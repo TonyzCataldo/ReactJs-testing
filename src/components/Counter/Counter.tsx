@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type CounterPropsType = {
   defaultCount: number;
@@ -8,6 +8,18 @@ type CounterPropsType = {
 const Counter = ({ defaultCount, description }: CounterPropsType) => {
   const [counter, setCounter] = useState(defaultCount);
   const [modifier, setModifier] = useState(1);
+  const [isBigger, setIsBigger] = useState(defaultCount >= 15);
+  const [atualizando, setAtualizando] = useState(false);
+
+  useEffect(() => {
+    setAtualizando(true);
+    const timeout = setTimeout(() => {
+      setIsBigger(counter >= 15);
+      setAtualizando(false);
+    }, 900);
+
+    return () => clearTimeout(timeout); // limpa timeout se `counter` mudar antes dos 500ms
+  }, [counter]);
 
   return (
     <div>
@@ -28,10 +40,19 @@ const Counter = ({ defaultCount, description }: CounterPropsType) => {
       </button>
       <button
         value={counter}
-        onClick={() => setCounter((prev) => prev - modifier)}
+        onClick={() =>
+          setTimeout(() => setCounter((prev) => prev - modifier), 500)
+        }
       >
         -
       </button>
+      {atualizando ? (
+        <p>atualizando...</p>
+      ) : isBigger ? (
+        <p>valor é grande</p>
+      ) : (
+        <p>valor nao é grande</p>
+      )}
     </div>
   );
 };
