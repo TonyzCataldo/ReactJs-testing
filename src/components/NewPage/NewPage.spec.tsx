@@ -41,6 +41,10 @@ describe("NewPage", () => {
   });
   describe("form validation and block submit when empty or invalid data", () => {
     const mockedAxios = axios as jest.Mocked<typeof axios>;
+    let nameInput: HTMLInputElement;
+    let emailInput: HTMLInputElement;
+    let cepInput: HTMLInputElement;
+    let button: HTMLButtonElement;
     beforeEach(() => {
       mockedAxios.get.mockClear();
       render(
@@ -48,59 +52,74 @@ describe("NewPage", () => {
           <NewPage />
         </ThemeProvider>
       );
+      nameInput = screen.getByPlaceholderText("Nome");
+      emailInput = screen.getByPlaceholderText("Email");
+      cepInput = screen.getByPlaceholderText("CEP");
+      button = screen.getByRole("button", { name: "Enviar" });
     });
-
-    it("should render empty error messages and block submit when user click in the button", async () => {
-      const button = screen.getByRole("button", {
-        name: "Enviar",
+    describe("when user try to submit with empty form", () => {
+      it("should render empty error messages when user click in the button", async () => {
+        await user.click(button);
+        expect(screen.getByText("O nome é obrigatório")).toBeInTheDocument();
+        expect(screen.getByText("Email obrigatório")).toBeInTheDocument();
+        expect(screen.getByText("O CEP é obrigatório")).toBeInTheDocument();
       });
 
-      await user.click(button);
-      expect(screen.getByText("O nome é obrigatório")).toBeInTheDocument();
-      expect(screen.getByText("Email obrigatório")).toBeInTheDocument();
-      expect(screen.getByText("O CEP é obrigatório")).toBeInTheDocument();
-      expect(mockedAxios.get).not.toHaveBeenCalled();
-    });
-
-    it("should render invalid error messages and block submit when user click in the button", async () => {
-      const nameInput = screen.getByPlaceholderText("Nome");
-      const emailInput = screen.getByPlaceholderText("Email");
-      const cepInput = screen.getByPlaceholderText("CEP");
-      const button = screen.getByRole("button", {
-        name: "Enviar",
+      it("shouldn't call submit function when user click in the button", async () => {
+        await user.click(button);
+        expect(mockedAxios.get).not.toHaveBeenCalled();
       });
-      await user.type(nameInput, "1111");
-      await user.type(emailInput, "thisisnotaemail");
-      await user.type(cepInput, "notacep12225");
-      await user.click(button);
-      expect(
-        screen.getByText("O nome não pode conter números")
-      ).toBeInTheDocument();
-      expect(screen.getByText("Email inválido")).toBeInTheDocument();
-      expect(
-        screen.getByText("O CEP deve conter exatamente 8 números")
-      ).toBeInTheDocument();
-      expect(mockedAxios.get).not.toHaveBeenCalled();
+    });
+    describe("when user try to submit with invalid data", () => {
+      it("should render invalid error messages when user click in the button", async () => {
+        await user.type(nameInput, "1111");
+        await user.type(emailInput, "thisisnotaemail");
+        await user.type(cepInput, "notacep12225");
+        await user.click(button);
+        expect(
+          screen.getByText("O nome não pode conter números")
+        ).toBeInTheDocument();
+        expect(screen.getByText("Email inválido")).toBeInTheDocument();
+        expect(
+          screen.getByText("O CEP deve conter exatamente 8 números")
+        ).toBeInTheDocument();
+      });
+      it("shouldn't call submit function when user click in the button", async () => {
+        await user.type(nameInput, "1111");
+        await user.type(emailInput, "thisisnotaemail");
+        await user.type(cepInput, "notacep12225");
+        await user.click(button);
+        expect(mockedAxios.get).not.toHaveBeenCalled();
+      });
     });
   });
   describe("when form is correctly filled, submit the function", () => {
     const mockedAxios = axios as jest.Mocked<typeof axios>;
     let consoleSpy: jest.SpyInstance;
+    let nameInput: HTMLInputElement;
+    let emailInput: HTMLInputElement;
+    let cepInput: HTMLInputElement;
+    let button: HTMLButtonElement;
+
     beforeEach(() => {
       mockedAxios.get.mockClear();
-      consoleSpy = jest.spyOn(console, "log").mockImplementation();
       render(
         <ThemeProvider theme={darkTheme}>
           <NewPage />
         </ThemeProvider>
       );
+      consoleSpy = jest.spyOn(console, "log").mockImplementation();
+      nameInput = screen.getByPlaceholderText("Nome");
+      emailInput = screen.getByPlaceholderText("Email");
+      cepInput = screen.getByPlaceholderText("CEP");
+      button = screen.getByRole("button", { name: "Enviar" });
     });
     afterEach(() => {
       consoleSpy.mockRestore();
     });
 
-    describe("when fc find the cep, return address save in state and print in screen", () => {
-      it("should call axios.get, find the address and console.log the values", async () => {
+    describe("when fc axios.get find the cep", () => {
+      it("should call axios.get, find the address and render the complete values", async () => {
         mockedAxios.get.mockResolvedValueOnce({
           data: {
             logradouro: "Rua Abc",
@@ -108,11 +127,30 @@ describe("NewPage", () => {
           },
         });
 
-        const nameInput = screen.getByPlaceholderText("Nome");
-        const emailInput = screen.getByPlaceholderText("Email");
-        const cepInput = screen.getByPlaceholderText("CEP");
-        const button = screen.getByRole("button", {
-          name: "Enviar",
+        await user.type(nameInput, "antonio");
+        await user.type(emailInput, "antonio@antonio.com");
+        await user.type(cepInput, "00112233");
+        await user.click(button);
+        expect(await screen.findByText("Nome: antonio")).toBeInTheDocument();
+        expect(
+          screen.getByText("Email: antonio@antonio.com")
+        ).toBeInTheDocument();
+        expect(await screen.findByText("CEP: 00112233")).toBeInTheDocument();
+        expect(
+          await screen.findByText("Logradouro: Rua Abc")
+        ).toBeInTheDocument();
+        expect(
+          await screen.findByText("Bairro: Bairro Defgh")
+        ).toBeInTheDocument();
+
+        expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+      });
+      it("should call axios.get, find the address and console.log the values", async () => {
+        mockedAxios.get.mockResolvedValueOnce({
+          data: {
+            logradouro: "Rua Abc",
+            bairro: "Bairro Defgh",
+          },
         });
 
         await user.type(nameInput, "antonio");
@@ -132,53 +170,37 @@ describe("NewPage", () => {
         expect(consoleSpy).toHaveBeenCalledTimes(1);
         expect(mockedAxios.get).toHaveBeenCalledTimes(1);
       });
-      it("should call axios.get, find the address and render the complete values", async () => {
-        mockedAxios.get.mockResolvedValueOnce({
-          data: {
-            logradouro: "Rua Abc",
-            bairro: "Bairro Defgh",
-          },
-        });
-        const nameInput = screen.getByPlaceholderText("Nome");
-        const emailInput = screen.getByPlaceholderText("Email");
-        const cepInput = screen.getByPlaceholderText("CEP");
-        const button = screen.getByRole("button", {
-          name: "Enviar",
-        });
-
-        await user.type(nameInput, "antonio");
-        await user.type(emailInput, "antonio@antonio.com");
-        await user.type(cepInput, "00112233");
-        await user.click(button);
-        expect(await screen.findByText("Nome: antonio")).toBeInTheDocument();
-        expect(
-          screen.getByText("Email: antonio@antonio.com")
-        ).toBeInTheDocument();
-        expect(await screen.findByText("CEP: 00112233")).toBeInTheDocument();
-        expect(
-          await screen.findByText("Logradouro: Rua Abc")
-        ).toBeInTheDocument();
-        expect(
-          await screen.findByText("Bairro: Bairro Defgh")
-        ).toBeInTheDocument();
-
-        expect(consoleSpy).toHaveBeenCalledTimes(1);
-        expect(mockedAxios.get).toHaveBeenCalledTimes(1);
-      });
     });
-    describe("when fc dont find the cep, return address save in state and print in screen", () => {
-      it("should call axios.get, dont find the address and console.log the values", async () => {
+
+    describe("when fc axios.get dont find the cep", () => {
+      it("should call axios.get, dont find the address and render partial values", async () => {
         mockedAxios.get.mockResolvedValueOnce({
           data: {
             erro: "cep nao encontrado",
           },
         });
 
-        const nameInput = screen.getByPlaceholderText("Nome");
-        const emailInput = screen.getByPlaceholderText("Email");
-        const cepInput = screen.getByPlaceholderText("CEP");
-        const button = screen.getByRole("button", {
-          name: "Enviar",
+        await user.type(nameInput, "antonio");
+        await user.type(emailInput, "antonio@antonio.com");
+        await user.type(cepInput, "00000000");
+        await user.click(button);
+
+        expect(await screen.findByText("Nome: antonio")).toBeInTheDocument();
+        expect(
+          screen.getByText("Email: antonio@antonio.com")
+        ).toBeInTheDocument();
+        expect(await screen.findByText("CEP: 00000000")).toBeInTheDocument();
+        expect(await screen.findByText("Logradouro:")).toBeInTheDocument();
+        expect(await screen.findByText("Bairro:")).toBeInTheDocument();
+
+        expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+      });
+
+      it("should call axios.get, dont find the address and console.log the values", async () => {
+        mockedAxios.get.mockResolvedValueOnce({
+          data: {
+            erro: "cep nao encontrado",
+          },
         });
 
         await user.type(nameInput, "antonio");
@@ -198,35 +220,65 @@ describe("NewPage", () => {
         expect(mockedAxios.get).toHaveBeenCalledTimes(1);
         expect(consoleSpy).toHaveBeenCalledTimes(1);
       });
-      it("should call axios.get, dont find the address and render partial values", async () => {
+
+      it("should call axios.get, dont find address and show cep error message", async () => {
         mockedAxios.get.mockResolvedValueOnce({
           data: {
             erro: "cep nao encontrado",
           },
         });
-
-        const nameInput = screen.getByPlaceholderText("Nome");
-        const emailInput = screen.getByPlaceholderText("Email");
-        const cepInput = screen.getByPlaceholderText("CEP");
-        const button = screen.getByRole("button", {
-          name: "Enviar",
-        });
-
         await user.type(nameInput, "antonio");
         await user.type(emailInput, "antonio@antonio.com");
         await user.type(cepInput, "00000000");
         await user.click(button);
-
-        expect(await screen.findByText("Nome: antonio")).toBeInTheDocument();
         expect(
-          screen.getByText("Email: antonio@antonio.com")
+          await screen.findByText("CEP não encontrado")
         ).toBeInTheDocument();
-        expect(await screen.findByText("CEP: 00000000")).toBeInTheDocument();
-        expect(await screen.findByText("Logradouro:")).toBeInTheDocument();
-        expect(await screen.findByText("Bairro:")).toBeInTheDocument();
+      });
+    });
 
+    describe("when fc axios.get fail", () => {
+      it("should try axios.get, fail, goes to catch block and dont render values", async () => {
+        mockedAxios.get.mockRejectedValueOnce({
+          error: "erro",
+        });
+        await user.type(nameInput, "antonio");
+        await user.type(emailInput, "antonio@antonio.com");
+        await user.type(cepInput, "03565000");
+        await user.click(button);
+        expect(screen.queryByText("Dados salvos:")).not.toBeInTheDocument();
+      });
+      it("should try axios.get, fail, goes to catch block and console.log empty values", async () => {
+        mockedAxios.get.mockRejectedValueOnce({
+          error: "erro",
+        });
+        await user.type(nameInput, "antonio");
+        await user.type(emailInput, "antonio@antonio.com");
+        await user.type(cepInput, "03565000");
+        await user.click(button);
+        expect(mockedAxios.get).toHaveBeenCalledWith(
+          "https://viacep.com.br/ws/03565000/json/"
+        );
+
+        expect(consoleSpy).toHaveBeenCalledWith({
+          Nome: "",
+          Email: "",
+          Cep: "",
+          Logradouro: "",
+          Bairro: "",
+        });
         expect(consoleSpy).toHaveBeenCalledTimes(1);
         expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+      });
+      it("should try axios.get, fail, goes to catch block and show cep error message", async () => {
+        mockedAxios.get.mockRejectedValueOnce({
+          error: "erro",
+        });
+        await user.type(nameInput, "antonio");
+        await user.type(emailInput, "antonio@antonio.com");
+        await user.type(cepInput, "03565000");
+        await user.click(button);
+        expect(screen.getByText("Erro ao buscar o CEP")).toBeInTheDocument();
       });
     });
   });
