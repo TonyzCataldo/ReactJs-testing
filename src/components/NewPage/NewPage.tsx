@@ -18,7 +18,8 @@ const schema = yup.object({
     .matches(/^\d{8}$/, "O CEP deve conter exatamente 8 números"),
 });
 
-type FormData = yup.Asserts<typeof schema>;
+type FormData = //yup.Asserts<typeof schema>;
+  yup.InferType<typeof schema>;
 
 const NewPage = () => {
   const [finalValues, setFinalValues] = useState({
@@ -32,7 +33,7 @@ const NewPage = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setError,
   } = useForm({
     resolver: yupResolver(schema) as Resolver<FormData>,
@@ -100,7 +101,9 @@ const NewPage = () => {
           autoComplete="new-cep"
         />
         {errors.cep && <p>{errors.cep.message}</p>}
-        <button type="submit">Enviar</button>
+        <button type="submit" disabled={isSubmitting}>
+          Enviar
+        </button>
       </S.Form>
       {finalValues.Nome && (
         <div>
